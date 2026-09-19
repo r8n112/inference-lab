@@ -5,11 +5,12 @@
 	"type": "module",
 	"description": "A static, offline-capable PWA of small, well-implemented tools for open-weight models served by the Hetzner Experiments Inference API. Unofficial homage; not affiliated with Hetzner.",
 	"license": "MIT OR Apache-2.0",
-	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"format": "prettier --write .",
