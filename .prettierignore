@@ -1,0 +1,8 @@
+node_modules
+.svelte-kit
+build
+package-lock.json
+static/pwa-*.png
+static/maskable-icon-*.png
+static/apple-touch-icon-*.png
+static/favicon.ico

@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+/* Design tokens. Dark-first, calm, high-contrast; the red is an homage to the
+   Hetzner mark, used sparingly and never as an endorsement. */
+@theme {
+	--color-ink-950: #0b0d12;
+	--color-ink-900: #11141b;
+	--color-ink-800: #171b24;
+	--color-ink-700: #1f2430;
+	--color-ink-600: #2b3242;
+	--color-accent: #d50c2d;
+	--color-accent-soft: #ff4d6a;
+	--font-mono:
+		ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+html,
+body {
+	height: 100%;
+}
+
+body {
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+::selection {
+	background: color-mix(in oklab, var(--color-accent) 40%, transparent);
+}
+
+/* A thin, unobtrusive scrollbar. */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-ink-600) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		animation-duration: 0.001ms !important;
+		transition-duration: 0.001ms !important;
+	}
+}

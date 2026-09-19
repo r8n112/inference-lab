@@ -1,0 +1,21 @@
+node_modules
+
+# SvelteKit build output
+/build
+/.svelte-kit
+/.vercel
+/.netlify
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# Generated PWA assets (kept in git for reproducible static deploys)
+# (icons under static/ are committed intentionally)
