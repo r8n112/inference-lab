@@ -9,9 +9,10 @@
 		<h2 class="font-medium text-slate-100">What this is</h2>
 		<p>
 			Inference Lab is a small, static web app that demonstrates what a fast open-weight model can
-			do well. Each tool is deliberately narrow: one clear job, a short prompt, deterministic
-			settings, and no hidden cleverness. The aim is to be a useful workshop and a clean reference
-			implementation, not a general-purpose assistant.
+			do well. The home screen is a chat assistant; behind it are a handful of deliberately narrow
+			tools — one clear job each, a short prompt, deterministic settings, and no hidden cleverness.
+			The assistant decides when to call a tool, and every tool is also usable on its own from the
+			<strong class="text-slate-100">Tools</strong> tab.
 		</p>
 	</section>
 

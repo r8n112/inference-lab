@@ -9,7 +9,7 @@
 
 {#if tool}
 	<nav class="mb-6 text-sm text-slate-500">
-		<a href={`${base}/`} class="hover:text-slate-300">Tools</a>
+		<a href={`${base}/tools`} class="hover:text-slate-300">Tools</a>
 		<span class="mx-1.5">/</span>
 		<span class="text-slate-400">{tool.name}</span>
 	</nav>
@@ -26,7 +26,7 @@
 {:else}
 	<div class="py-20 text-center">
 		<p class="text-lg text-slate-300">That tool doesn’t exist.</p>
-		<a href={`${base}/`} class="mt-3 inline-block text-sm text-accent-soft hover:text-white"
+		<a href={`${base}/tools`} class="mt-3 inline-block text-sm text-accent-soft hover:text-white"
 			>← Back to all tools</a
 		>
 	</div>

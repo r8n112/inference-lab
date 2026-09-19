@@ -1,0 +1,3 @@
+# Cloudflare Pages SPA fallback: serve the app shell for any path so client-side
+# routing handles deep links. Ignored by GitHub Pages (which uses 404.html).
+/* /index.html 200

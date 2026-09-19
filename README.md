@@ -7,6 +7,8 @@ models served by the free [Hetzner Experiments Inference API](https://experiment
 > This is an independent homage built on their generous experiments platform.
 > No Hetzner logos or trademarks are used.
 
+- **Chat first.** The home screen is a Claude-style assistant that decides when to
+  use the site's tools behind the scenes. Each tool is also available on its own.
 - **Static & offline-capable.** No backend, no build server, no telemetry. It is
   an installable PWA whose shell is cached; only inference needs the network.
 - **Your token, your browser.** Bring your own free API token. It is stored in
@@ -14,6 +16,21 @@ models served by the free [Hetzner Experiments Inference API](https://experiment
 - **Tuned for one model.** [`Qwen/Qwen3.6-35B-A3B-FP8`](https://inference.hetzner.com/api/v1/models)
   — a fast MoE with vision and a 262k-token context window — with
   `Qwen3.8-27B` selectable and any OpenAI-compatible endpoint supported.
+
+## Chat
+
+The home route is an assistant with the tools of this site behind it. It uses
+**tool calling** so the model can invoke a tool, see the result, and continue:
+
+- **Prompt protocol (default).** A strict, fenced `tool` directive in the system
+  prompt. It works on any OpenAI-compatible completion endpoint, including ones
+  without native function calling.
+- **Native function calling.** OpenAI-style `tools` / `tool_calls`, selectable in
+  Settings for endpoints that support it.
+
+The transcript is always stored in the native shape, so the UI is identical in
+both modes. Images can be attached directly; the assistant sends them to the
+vision-capable model rather than through a tool.
 
 ## Tools
 
@@ -29,8 +46,10 @@ models served by the free [Hetzner Experiments Inference API](https://experiment
 | **Describe an image** | Alt text, UI steps or a full description (vision input).      |
 
 Each tool is a small data definition: a short system prompt, a handful of
-options, and (where needed) a post-processor. No hidden cleverness, no agentic
-loops — just reliable single-shot tasks that a fast model does well.
+options, and (where needed) a post-processor. The chat exposes the non-vision
+tools as callable functions **derived from those same definitions**, so adding a
+tool makes it available to the assistant automatically. No agentic loops beyond a
+bounded tool-use cycle.
 
 ## Quick start
 
@@ -53,8 +72,9 @@ npm test           # vitest unit tests
 npm run format     # prettier
 ```
 
-Unit tests cover the prompt builders, the JSON post-processing, and the SSE
-client. Everything else is plain Svelte + Tailwind.
+Unit tests cover the prompt builders, the chat agent loop (both tool modes), the
+JSON post-processing, and the SSE client. Everything else is plain Svelte +
+Tailwind.
 
 ## Deploy
 
@@ -74,17 +94,23 @@ src/
   app.html, app.css          shell + design tokens
   lib/
     inference/
-      client.ts              OpenAI-compatible client (fetch + SSE), typed errors
+      client.ts              OpenAI-compatible client (fetch + SSE, tool calls), typed errors
       types.ts               minimal wire types
+    chat/
+      agent.ts               the tool-use loop (native + prompt modes)
+      tools.ts               tool schemas + the fallback protocol + parser
+      markdown.ts            marked + DOMPurify + highlight.js
+      store.svelte.ts        conversation state (localStorage)
     tools/
       index.ts               the eight tools (data) + JSON helpers
       types.ts               Tool/field model + message builder
-    settings.svelte.ts       token, base URL, model (localStorage)
-    components/ToolRunner.svelte
+    settings.svelte.ts       token, base URL, model, tool mode (localStorage)
+    components/              ChatMessage, Composer, ToolRunner
   routes/
     +layout.svelte           shell, nav, unofficial notice
-    +page.svelte             tool grid
-    t/[id]/+page.svelte      generic tool page
+    +page.svelte             chat (home)
+    tools/+page.svelte       tool grid
+    tools/[id]/+page.svelte  generic tool page
     settings/, about/
 ```
 

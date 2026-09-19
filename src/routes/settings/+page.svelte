@@ -9,6 +9,7 @@
 	let model = $state(settings.value.model);
 	let temperature = $state(settings.value.temperature);
 	let maxTokens = $state(settings.value.maxTokens);
+	let toolMode = $state(settings.value.toolMode);
 
 	let showToken = $state(false);
 	let advanced = $state(settings.isCustomEndpoint);
@@ -23,7 +24,8 @@
 			baseUrl: baseUrl.trim() || DEFAULT_BASE_URL,
 			model: model.trim() || DEFAULT_MODEL,
 			temperature,
-			maxTokens
+			maxTokens,
+			toolMode
 		});
 		saved = true;
 		setTimeout(() => (saved = false), 1500);
@@ -175,12 +177,26 @@
 						class="accent-[var(--color-accent)]"
 					/>
 				</label>
+				<label class="flex flex-col gap-1.5">
+					<span class="text-slate-300">Chat tool calling</span>
+					<select
+						bind:value={toolMode}
+						class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-slate-100 outline-none focus:border-accent"
+					>
+						<option value="prompt">Prompt protocol (works everywhere, default)</option>
+						<option value="native">Native function calling (OpenAI tools)</option>
+					</select>
+					<span class="text-xs text-slate-500"
+						>How the chat asks the model to use the site’s tools. Switch to native if your endpoint
+						supports OpenAI <code class="font-mono">tools</code>.</span
+					>
+				</label>
 			</div>
 		</details>
 	</form>
 
 	<div class="mt-8 flex items-center justify-between border-t border-ink-700 pt-4 text-sm">
-		<a href={`${base}/`} class="text-slate-400 hover:text-slate-200">← Back to tools</a>
+		<a href={`${base}/tools`} class="text-slate-400 hover:text-slate-200">← Back to tools</a>
 		<button
 			type="button"
 			onclick={() => {
@@ -190,6 +206,7 @@
 				model = DEFAULT_MODEL;
 				temperature = settings.value.temperature;
 				maxTokens = settings.value.maxTokens;
+				toolMode = settings.value.toolMode;
 			}}
 			class="text-slate-500 hover:text-red-300">Reset all settings</button
 		>

@@ -30,6 +30,10 @@ jobs:
       - name: Build
         # Project sites are served from /<repo>/, so set the base path.
         run: BASE_PATH="/${{ github.event.repository.name }}" npm run build
+      - name: SPA fallback for deep links
+        # GitHub Pages has no rewrite; serving the app shell as 404.html lets the
+        # client router handle paths like /tools/summarize on a direct load.
+        run: cp build/index.html build/404.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

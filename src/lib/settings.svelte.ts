@@ -12,12 +12,21 @@ export const DEFAULT_BASE_URL = 'https://inference.hetzner.com/api/v1';
 /** The model this toolstack is tuned for: a fast MoE with vision and 262k ctx. */
 export const DEFAULT_MODEL = 'Qwen/Qwen3.6-35B-A3B-FP8';
 
+/**
+ * How the chat asks the model to use tools:
+ * - `prompt`: a strict JSON protocol in the system prompt (works on any
+ *   OpenAI-compatible endpoint) — the default, for reliability.
+ * - `native`: OpenAI-style `tools` / `tool_calls` function calling.
+ */
+export type ToolMode = 'prompt' | 'native';
+
 export interface Settings {
 	baseUrl: string;
 	token: string;
 	model: string;
 	temperature: number;
 	maxTokens: number;
+	toolMode: ToolMode;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -25,7 +34,8 @@ export const DEFAULT_SETTINGS: Settings = {
 	token: '',
 	model: DEFAULT_MODEL,
 	temperature: 0.2,
-	maxTokens: 2048
+	maxTokens: 2048,
+	toolMode: 'prompt'
 };
 
 function isBrowser(): boolean {

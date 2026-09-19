@@ -7,7 +7,8 @@
 	let { children } = $props();
 
 	const nav = [
-		{ href: `${base}/`, label: 'Tools' },
+		{ href: `${base}/`, label: 'Chat' },
+		{ href: `${base}/tools`, label: 'Tools' },
 		{ href: `${base}/about`, label: 'About' },
 		{ href: `${base}/settings`, label: 'Settings' }
 	];

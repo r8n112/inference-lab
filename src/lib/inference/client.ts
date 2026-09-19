@@ -11,11 +11,13 @@
  *   `retryable` flag so the UI can offer "try again" without retry storms.
  */
 
-import type { ChatCompletionChunk, ChatRequest, Model, TokenUsage } from './types';
+import type { ChatCompletionChunk, ChatRequest, Model, TokenUsage, ToolCall } from './types';
 
 export interface ChatResult {
 	text: string;
 	usage?: TokenUsage;
+	/** Tool calls the model requested (native function calling). */
+	toolCalls: ToolCall[];
 }
 
 /** A non-2xx response from the inference API, or a transport failure. */
@@ -136,6 +138,16 @@ export async function* streamChat(params: ChatParams): AsyncGenerator<string, Ch
 	let buffer = '';
 	let text = '';
 	let usage: TokenUsage | undefined;
+	// Native tool calls arrive as fragments keyed by index; accumulate them.
+	const partials = new Map<number, { id: string; name: string; args: string }>();
+	const collect = (): ToolCall[] =>
+		[...partials.entries()]
+			.sort(([a], [b]) => a - b)
+			.map(([index, call]) => ({
+				id: call.id || `call_${index}`,
+				type: 'function' as const,
+				function: { name: call.name, arguments: call.args }
+			}));
 
 	while (true) {
 		const { done, value } = await reader.read();
@@ -149,7 +161,7 @@ export async function* streamChat(params: ChatParams): AsyncGenerator<string, Ch
 			buffer = buffer.slice(newlineIndex + 1);
 			if (!line.startsWith('data:')) continue;
 			const payload = line.slice(5).trim();
-			if (payload === '[DONE]') return { text, usage };
+			if (payload === '[DONE]') return { text, usage, toolCalls: collect() };
 			if (!payload) continue;
 
 			let chunk: ChatCompletionChunk;
@@ -159,15 +171,26 @@ export async function* streamChat(params: ChatParams): AsyncGenerator<string, Ch
 				continue; // Ignore keep-alives and malformed frames.
 			}
 			if (chunk.usage) usage = chunk.usage;
-			const delta = chunk.choices?.[0]?.delta?.content;
-			if (delta) {
-				text += delta;
-				onDelta?.(delta);
-				yield delta;
+			const delta = chunk.choices?.[0]?.delta;
+			if (!delta) continue;
+
+			for (const part of delta.tool_calls ?? []) {
+				const index = part.index ?? 0;
+				const current = partials.get(index) ?? { id: '', name: '', args: '' };
+				if (part.id) current.id = part.id;
+				if (part.function?.name) current.name = part.function.name;
+				if (part.function?.arguments) current.args += part.function.arguments;
+				partials.set(index, current);
+			}
+
+			if (delta.content) {
+				text += delta.content;
+				onDelta?.(delta.content);
+				yield delta.content;
 			}
 		}
 	}
-	return { text, usage };
+	return { text, usage, toolCalls: collect() };
 }
 
 /** Convenience wrapper that runs a completion to completion and returns text. */
