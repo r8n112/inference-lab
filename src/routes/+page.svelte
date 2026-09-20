@@ -31,9 +31,9 @@
 	const busy = $derived(turn !== null);
 
 	const suggestions = [
-		'Summarize this into a few bullets:',
-		'Turn this diff into a commit message:',
-		'Extract the names and dates from this as JSON:'
+		'Explain the difference between TCP and UDP, with one real-world example each.',
+		'Write a Python function that retries a request with exponential backoff.',
+		'Draft a polite reminder email for an overdue invoice.'
 	];
 
 	$effect(() => {
