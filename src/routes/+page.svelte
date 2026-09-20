@@ -44,19 +44,20 @@
 		queueMicrotask(() => scroller?.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' }));
 	});
 
-	async function send(text: string, attached?: string) {
+	// Clear a stale error when switching or creating a conversation.
+	let lastConversationId = $state<string | undefined>(undefined);
+	$effect(() => {
+		const id = active?.id;
+		if (id !== lastConversationId) {
+			lastConversationId = id;
+			error = '';
+		}
+	});
+
+	/** Run one assistant turn over `history`; appends nothing itself. */
+	async function run(conversationId: string, history: Message[]) {
 		error = '';
-		const conversation = conversations.active ?? conversations.create();
-
-		const parts: ContentPart[] = [{ type: 'text', text }];
-		if (attached) parts.push({ type: 'image_url', image_url: { url: attached } });
-		const userMessage: Message = { role: 'user', content: parts };
-
-		// Show the user's message immediately, before any request is made.
-		conversations.appendMessage(conversation.id, userMessage);
-		const history = conversations.active?.messages ?? [userMessage];
-
-		turn = { id: conversation.id, streaming: '', items: [] };
+		turn = { id: conversationId, streaming: '', items: [] };
 		controller = new AbortController();
 		const baseUrl = settings.value.baseUrl;
 		const token = settings.value.token;
@@ -119,7 +120,7 @@
 					}
 				}
 			});
-			conversations.setMessages(conversation.id, result);
+			conversations.setMessages(conversationId, result);
 		} catch (caught) {
 			if ((caught as Error).name !== 'AbortError') {
 				error = caught instanceof InferenceError ? caught.message : (caught as Error).message;
@@ -128,6 +129,28 @@
 			turn = null;
 			controller = undefined;
 		}
+	}
+
+	async function send(text: string, attached?: string) {
+		if (busy) return;
+		error = '';
+		const conversation = conversations.active ?? conversations.create();
+
+		const parts: ContentPart[] = [{ type: 'text', text }];
+		if (attached) parts.push({ type: 'image_url', image_url: { url: attached } });
+		const userMessage: Message = { role: 'user', content: parts };
+
+		// Show the user's message immediately, before any request is made.
+		conversations.appendMessage(conversation.id, userMessage);
+		const history = conversations.active?.messages ?? [userMessage];
+		await run(conversation.id, history);
+	}
+
+	/** Re-run the last turn (its user message is already in the transcript). */
+	async function retry() {
+		const conversation = conversations.active;
+		if (!conversation || busy) return;
+		await run(conversation.id, conversation.messages);
 	}
 
 	function stop() {
@@ -204,10 +227,9 @@
 			{#if error}
 				<div class="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
 					{error}
-					{#if !busy}<button
-							onclick={() => send('Please continue.')}
-							class="ml-2 underline hover:text-white">retry</button
-						>{/if}
+					{#if !busy}
+						<button onclick={retry} class="ml-2 underline hover:text-white">retry</button>
+					{/if}
 				</div>
 			{/if}
 		</div>

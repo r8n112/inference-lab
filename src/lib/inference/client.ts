@@ -33,6 +33,13 @@ export class InferenceError extends Error {
 	}
 }
 
+/** Human-readable hint for a failed fetch (network, CORS or extension). */
+function transportHint(baseUrl: string): string {
+	const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+	if (offline) return 'You appear to be offline.';
+	return `Check your network connection. A browser extension, ad-blocker or offline mode can also block requests to ${baseUrl}.`;
+}
+
 interface ChatParams extends Omit<ChatRequest, 'stream' | 'stream_options'> {
 	baseUrl: string;
 	token: string;
@@ -118,8 +125,9 @@ export async function listModels(
 			signal
 		});
 	} catch (error) {
+		if ((error as Error).name === 'AbortError') throw error;
 		throw new InferenceError(
-			`Could not reach ${baseUrl}. ${(error as Error).message}`,
+			`Could not reach ${baseUrl}. ${transportHint(baseUrl)}`,
 			undefined,
 			true
 		);
@@ -153,7 +161,7 @@ export async function* streamChat(params: ChatParams): AsyncGenerator<string, Ch
 	} catch (error) {
 		if ((error as Error).name === 'AbortError') throw error;
 		throw new InferenceError(
-			`Could not reach ${baseUrl}. ${(error as Error).message}`,
+			`Could not reach ${baseUrl}. ${transportHint(baseUrl)}`,
 			undefined,
 			true
 		);

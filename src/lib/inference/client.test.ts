@@ -177,6 +177,45 @@ describe('errors', () => {
 		expect(error.retryable).toBe(true);
 		expect(error.status).toBe(429);
 	});
+
+	it('wraps a transport failure as a retryable error with a hint', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => {
+				throw new TypeError('Failed to fetch');
+			})
+		);
+		const error = await chat({
+			baseUrl: 'https://inference.hetzner.com/api/v1',
+			token: 't',
+			model: 'm',
+			messages: [{ role: 'user', content: 'hi' }]
+		}).catch((caught) => caught);
+		expect(error).toBeInstanceOf(InferenceError);
+		expect(error.retryable).toBe(true);
+		expect(error.status).toBeUndefined();
+		expect(error.message).toContain('Could not reach https://inference.hetzner.com/api/v1');
+		expect(error.message).toContain('network connection');
+	});
+
+	it('does not swallow an abort', async () => {
+		const abort = new Error('aborted');
+		abort.name = 'AbortError';
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => {
+				throw abort;
+			})
+		);
+		const error = await chat({
+			baseUrl: 'https://example.test/api/v1',
+			token: 't',
+			model: 'm',
+			messages: [{ role: 'user', content: 'hi' }]
+		}).catch((caught) => caught);
+		expect(error.name).toBe('AbortError');
+		expect(error).not.toBeInstanceOf(InferenceError);
+	});
 });
 
 describe('listModels', () => {
