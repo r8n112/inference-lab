@@ -19,8 +19,9 @@ models served by the free [Hetzner Experiments Inference API](https://experiment
 
 ## Chat
 
-The home route is an assistant with the tools of this site behind it. It uses
-**tool calling** so the model can invoke a tool, see the result, and continue:
+The home route is a Claude-style assistant with a left sidebar of conversations.
+It uses **tool calling** so the model can invoke a tool, see the result, and
+continue:
 
 - **Prompt protocol (default).** A strict, fenced `tool` directive in the system
   prompt. It works on any OpenAI-compatible completion endpoint, including ones
@@ -29,8 +30,10 @@ The home route is an assistant with the tools of this site behind it. It uses
   Settings for endpoints that support it.
 
 The transcript is always stored in the native shape, so the UI is identical in
-both modes. Images can be attached directly; the assistant sends them to the
-vision-capable model rather than through a tool.
+both modes. Tool calls are shown inline as compact traces. The user's message
+appears immediately (before the request), and a thinking indicator is shown while
+the model or a tool is working. Conversations are stored in `localStorage`; images
+can be attached directly and go to the vision-capable model rather than a tool.
 
 ## Tools
 
@@ -99,15 +102,17 @@ src/
     chat/
       agent.ts               the tool-use loop (native + prompt modes)
       tools.ts               tool schemas + the fallback protocol + parser
+      conversations.ts       pure conversation helpers (title, time)
+      conversations.svelte.ts reactive multi-conversation store
+      view.ts                transcript → render list (collapses tool traces)
       markdown.ts            marked + DOMPurify + highlight.js
-      store.svelte.ts        conversation state (localStorage)
     tools/
       index.ts               the eight tools (data) + JSON helpers
       types.ts               Tool/field model + message builder
     settings.svelte.ts       token, base URL, model, tool mode (localStorage)
-    components/              ChatMessage, Composer, ToolRunner
+    components/              Sidebar, ChatMessage, Composer, ToolTrace, ToolRunner
   routes/
-    +layout.svelte           shell, nav, unofficial notice
+    +layout.svelte           app shell (sidebar + mobile drawer)
     +page.svelte             chat (home)
     tools/+page.svelte       tool grid
     tools/[id]/+page.svelte  generic tool page
