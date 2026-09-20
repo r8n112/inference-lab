@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { chat, InferenceError, listModels, streamChat } from './client';
+import {
+	chat,
+	InferenceError,
+	listModels,
+	normalizeToken,
+	streamChat,
+	tokenFingerprint
+} from './client';
 
 function sseResponse(frames: string[]): Response {
 	const encoder = new TextEncoder();
@@ -15,6 +22,37 @@ function sseResponse(frames: string[]): Response {
 
 afterEach(() => {
 	vi.restoreAllMocks();
+});
+
+describe('normalizeToken', () => {
+	it('trims whitespace and newlines from a wrapped paste', () => {
+		expect(normalizeToken('  abc\n')).toBe('abc');
+		expect(normalizeToken('a\nb c')).toBe('abc');
+	});
+
+	it('strips surrounding quotes', () => {
+		expect(normalizeToken('"abc"')).toBe('abc');
+		expect(normalizeToken("'abc'")).toBe('abc');
+	});
+
+	it('strips an accidental Bearer prefix', () => {
+		expect(normalizeToken('Bearer abc')).toBe('abc');
+		expect(normalizeToken('bearer  abc')).toBe('abc');
+		expect(normalizeToken('Bearer "abc"')).toBe('abc');
+	});
+
+	it('leaves a clean token unchanged', () => {
+		expect(normalizeToken('sk-abc123')).toBe('sk-abc123');
+	});
+});
+
+describe('tokenFingerprint', () => {
+	it('never reveals the token', () => {
+		expect(tokenFingerprint('')).toBe('none');
+		expect(tokenFingerprint('short')).toBe('len 5');
+		expect(tokenFingerprint('abcdefghij')).toBe('len 10 · abc…hij');
+		expect(tokenFingerprint('abcdefghij')).not.toContain('defg');
+	});
 });
 
 describe('streamChat', () => {
@@ -80,6 +118,31 @@ describe('streamChat', () => {
 		expect(url).toBe('https://example.test/api/v1/chat/completions');
 		expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer secret');
 		expect(JSON.parse(String(init?.body)).model).toBe('Qwen/Qwen3.6-35B-A3B-FP8');
+	});
+
+	it('normalizes a noisy token before sending it', async () => {
+		const fetchMock = vi.fn(
+			async (_url: string, _init?: RequestInit) =>
+				new Response(
+					new ReadableStream<Uint8Array>({
+						start(controller) {
+							controller.close();
+						}
+					}),
+					{ status: 200 }
+				)
+		);
+		vi.stubGlobal('fetch', fetchMock);
+
+		await chat({
+			baseUrl: 'https://example.test/api/v1',
+			token: '  Bearer "abc123"\n',
+			model: 'm',
+			messages: [{ role: 'user', content: 'hi' }]
+		});
+
+		const [, init] = fetchMock.mock.calls[0];
+		expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer abc123');
 	});
 });
 

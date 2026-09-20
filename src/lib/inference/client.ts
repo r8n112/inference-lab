@@ -45,10 +45,38 @@ function join(baseUrl: string, path: string): string {
 	return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
 }
 
+/**
+ * Normalise a pasted token.
+ *
+ * Common copy/paste artefacts cause a 401 that looks like a wrong token:
+ * surrounding quotes, a leading `Bearer `, or newlines/spaces from a wrapped
+ * clipboard. Strip all of them so only the token itself is sent.
+ */
+export function normalizeToken(raw: string): string {
+	let token = (raw ?? '').trim();
+	token = token.replace(/^bearer\s+/i, '').trim();
+	if (
+		(token.startsWith('"') && token.endsWith('"')) ||
+		(token.startsWith("'") && token.endsWith("'"))
+	) {
+		token = token.slice(1, -1);
+	}
+	return token.replace(/\s+/g, '');
+}
+
+/** A safe, non-reversible fingerprint for display (never the token itself). */
+export function tokenFingerprint(token: string): string {
+	const value = normalizeToken(token);
+	if (!value) return 'none';
+	if (value.length <= 8) return `len ${value.length}`;
+	return `len ${value.length} · ${value.slice(0, 3)}…${value.slice(-3)}`;
+}
+
 function authHeaders(token: string): Record<string, string> {
+	const value = normalizeToken(token);
 	return {
 		'Content-Type': 'application/json',
-		...(token ? { Authorization: `Bearer ${token}` } : {})
+		...(value ? { Authorization: `Bearer ${value}` } : {})
 	};
 }
 
@@ -67,7 +95,7 @@ async function errorFrom(response: Response): Promise<InferenceError> {
 	const retryable = response.status === 429 || response.status >= 500;
 	const hint =
 		response.status === 401
-			? 'Check your token in Settings.'
+			? 'The API rejected the token. Make sure it is the Inference API token value (not its name), and that the base URL is correct.'
 			: response.status === 429
 				? 'Rate limited — wait a moment and try again.'
 				: response.status === 404

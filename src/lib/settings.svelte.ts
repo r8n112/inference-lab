@@ -4,6 +4,8 @@
  * backend and never sends the token anywhere except the inference API itself.
  */
 
+import { normalizeToken } from '$lib/inference/client';
+
 const STORAGE_KEY = 'inference-lab.settings.v1';
 
 /** The public, documented base URL of the Hetzner Experiments Inference API. */
@@ -53,7 +55,9 @@ function load(): Settings {
 			...parsed,
 			// Never let a stale/empty base URL break the app.
 			baseUrl: parsed.baseUrl?.trim() || DEFAULT_BASE_URL,
-			model: parsed.model?.trim() || DEFAULT_MODEL
+			model: parsed.model?.trim() || DEFAULT_MODEL,
+			// Clean up artefacts from an earlier paste.
+			token: normalizeToken(parsed.token ?? '')
 		};
 	} catch {
 		return { ...DEFAULT_SETTINGS };
@@ -78,7 +82,11 @@ class SettingsStore {
 	}
 
 	update(patch: Partial<Settings>): void {
-		this.#value = { ...this.#value, ...patch };
+		const clean = { ...patch };
+		if (clean.token !== undefined) clean.token = normalizeToken(clean.token);
+		if (clean.baseUrl !== undefined) clean.baseUrl = clean.baseUrl.trim();
+		if (clean.model !== undefined) clean.model = clean.model.trim();
+		this.#value = { ...this.#value, ...clean };
 		this.#persist();
 	}
 

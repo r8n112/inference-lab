@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { listModels } from '$lib/inference/client';
+	import { listModels, tokenFingerprint } from '$lib/inference/client';
 	import { DEFAULT_BASE_URL, DEFAULT_MODEL, settings } from '$lib/settings.svelte';
 	import type { Model } from '$lib/inference/types';
 
@@ -10,6 +10,8 @@
 	let temperature = $state(settings.value.temperature);
 	let maxTokens = $state(settings.value.maxTokens);
 	let toolMode = $state(settings.value.toolMode);
+
+	const resolvedBase = $derived((baseUrl.trim() || DEFAULT_BASE_URL).replace(/\/+$/, ''));
 
 	let showToken = $state(false);
 	let advanced = $state(settings.isCustomEndpoint);
@@ -32,6 +34,8 @@
 	}
 
 	async function test() {
+		// Persist first so a successful test also configures the chat.
+		save();
 		testing = true;
 		testError = '';
 		models = [];
@@ -86,7 +90,10 @@
 					href="https://experiments.hetzner.com/inference"
 					rel="noopener noreferrer"
 					target="_blank">experiments.hetzner.com/inference</a
-				>.
+				>. Paste the token value, not its name.
+			</span>
+			<span class="text-xs text-slate-600">
+				token: {tokenFingerprint(token)} · endpoint: {resolvedBase}
 			</span>
 		</label>
 
@@ -154,6 +161,9 @@
 					<span class="text-xs text-slate-500"
 						>Any OpenAI-compatible endpoint. Default: {DEFAULT_BASE_URL}</span
 					>
+					<span class="font-mono text-xs text-slate-600">
+						GET {resolvedBase}/models · POST {resolvedBase}/chat/completions
+					</span>
 				</label>
 				<label class="flex flex-col gap-1.5">
 					<span class="text-slate-300">Temperature: {temperature.toFixed(1)}</span>
