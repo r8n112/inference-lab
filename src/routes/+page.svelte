@@ -2,6 +2,7 @@
 	import { base } from '$app/paths';
 	import ChatMessage from '$lib/components/ChatMessage.svelte';
 	import Composer from '$lib/components/Composer.svelte';
+	import ModelPicker from '$lib/components/ModelPicker.svelte';
 	import ToolTrace from '$lib/components/ToolTrace.svelte';
 	import { buildSystemPrompt, runAgent, type ModelCall, type ToolMode } from '$lib/chat/agent';
 	import { buildUserContent, MAX_FILES, readFile, type Attachment } from '$lib/chat/attachments';
@@ -237,15 +238,21 @@
 
 	<!-- Conversation header -->
 	<div class="flex items-center gap-3 border-b border-ink-700 px-4 py-2.5">
-		<h1 class="truncate text-sm font-medium text-slate-300">
+		<h1 class="min-w-0 flex-1 truncate text-sm font-medium text-slate-300">
 			{active?.title ?? 'New chat'}
 		</h1>
-		<span class="ml-auto hidden shrink-0 items-center gap-2 text-[11px] text-slate-500 sm:flex">
-			<span class="rounded-full border border-ink-600 px-2 py-0.5">{settings.value.model}</span>
-			<span class="rounded-full border border-ink-600 px-2 py-0.5"
-				>{toolMode === 'prompt' ? 'prompt tools' : 'native tools'}</span
+		<div class="flex shrink-0 items-center gap-2">
+			<select
+				value={settings.value.toolMode}
+				onchange={(event) => settings.update({ toolMode: event.currentTarget.value as ToolMode })}
+				title="How the assistant calls tools"
+				class="hidden rounded-lg border border-ink-600 bg-ink-900 px-2 py-1.5 text-xs text-slate-300 outline-none hover:bg-ink-800 focus:border-accent sm:block"
 			>
-		</span>
+				<option value="prompt">Prompt tools</option>
+				<option value="native">Native tools</option>
+			</select>
+			<ModelPicker />
+		</div>
 	</div>
 
 	<div bind:this={scroller} class="min-h-0 flex-1 overflow-y-auto">
