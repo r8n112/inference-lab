@@ -1,27 +1,25 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { settings } from '$lib/settings.svelte';
-	import { TOOLS } from '$lib/tools';
+	import { TOOL_GROUPS, TOOLS } from '$lib/tools';
 </script>
 
 <div class="h-full overflow-y-auto">
 	<div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
 		<section class="mb-10 max-w-3xl">
-			<h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-				Small tools for open models
-			</h1>
+			<h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">The tool stack</h1>
 			<p class="mt-3 text-slate-400">
-				Focused, well-implemented tools powered by the free
+				{TOOLS.length} focused, well-implemented tools powered by the free
 				<a
 					class="text-slate-200 underline decoration-accent/60 underline-offset-2 hover:text-white"
 					href="https://experiments.hetzner.com/docs/inference"
 					rel="noopener noreferrer"
 					target="_blank">Hetzner Experiments Inference API</a
-				>. Each one is a single, reliable job — or ask the
+				>. Each does one job well — or ask the
 				<a
 					class="text-slate-200 underline decoration-accent/60 underline-offset-2 hover:text-white"
 					href={`${base}/`}>assistant</a
-				> to pick the right tool for you.
+				> to pick the right one for you.
 			</p>
 			<div class="mt-4 flex flex-wrap items-center gap-3 text-sm">
 				<span class="rounded-full border border-ink-600 px-3 py-1 text-slate-300"
@@ -37,33 +35,34 @@
 			</div>
 		</section>
 
-		<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-			{#each TOOLS as tool (tool.id)}
-				<li>
-					<a
-						href={`${base}/tools/${tool.id}`}
-						class="group flex h-full flex-col gap-3 rounded-xl border border-ink-700 bg-ink-900/60 p-5 transition-colors hover:border-ink-600 hover:bg-ink-800"
-					>
-						<div class="flex items-center gap-3">
-							<span class="text-2xl" aria-hidden="true">{tool.icon}</span>
-							<span
-								class="rounded-full bg-ink-700 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-400"
-								>{tool.category}</span
+		{#each TOOL_GROUPS as group (group.category)}
+			<section class="mb-10">
+				<h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+					{group.category}
+				</h2>
+				<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{#each group.tools as tool (tool.id)}
+						<li>
+							<a
+								href={`${base}/tools/${tool.id}`}
+								class="group flex h-full flex-col gap-3 rounded-xl border border-ink-700 bg-ink-900/60 p-5 transition-colors hover:border-ink-600 hover:bg-ink-800"
 							>
-						</div>
-						<h2 class="font-medium text-slate-100 group-hover:text-white">{tool.name}</h2>
-						<p class="text-sm text-slate-400">{tool.tagline}</p>
-						{#if tool.highlight}
-							<p class="mt-auto text-xs text-accent-soft">{tool.highlight}</p>
-						{/if}
-					</a>
-				</li>
-			{/each}
-		</ul>
+								<div class="flex items-center gap-3">
+									<span class="text-2xl" aria-hidden="true">{tool.icon}</span>
+								</div>
+								<h3 class="font-medium text-slate-100 group-hover:text-white">{tool.name}</h3>
+								<p class="text-sm text-slate-400">{tool.tagline}</p>
+								{#if tool.highlight}
+									<p class="mt-auto text-xs text-accent-soft">{tool.highlight}</p>
+								{/if}
+							</a>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/each}
 
-		<section
-			class="mt-12 rounded-xl border border-ink-700 bg-ink-900/40 p-5 text-sm text-slate-400"
-		>
+		<section class="rounded-xl border border-ink-700 bg-ink-900/40 p-5 text-sm text-slate-400">
 			<h2 class="mb-2 font-medium text-slate-200">Honest about the trade-offs</h2>
 			<ul class="list-inside list-disc space-y-1">
 				<li>

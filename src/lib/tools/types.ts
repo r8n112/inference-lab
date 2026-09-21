@@ -38,6 +38,8 @@ export interface ToolInput {
 	values: Record<string, string>;
 }
 
+export type ToolCategory = 'Write' | 'Code' | 'Data' | 'Analyze' | 'Vision';
+
 export interface ToolMeta {
 	id: string;
 	name: string;
@@ -45,7 +47,7 @@ export interface ToolMeta {
 	description: string;
 	/** Single emoji is enough and keeps the bundle tiny. */
 	icon: string;
-	category: 'Text' | 'Code' | 'Data' | 'Vision';
+	category: ToolCategory;
 	/** Shown on the card, e.g. "uses the 262k context window". */
 	highlight?: string;
 	needsVision?: boolean;

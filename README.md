@@ -7,8 +7,12 @@ models served by the free [Hetzner Experiments Inference API](https://experiment
 > This is an independent homage built on their generous experiments platform.
 > No Hetzner logos or trademarks are used.
 
-- **Chat first.** The home screen is a Claude-style assistant that decides when to
-  use the site's tools behind the scenes. Each tool is also available on its own.
+- **Chat first.** The home screen is a Claude-style assistant with multiple
+  conversations in a sidebar. It decides when to use the site's tools behind the
+  scenes; each tool is also available on its own under **Tools**.
+- **Attachments.** Drag files onto the chat, paste images, or use the 📎 button.
+  Images go to the vision-capable model; text/code files are read in the browser
+  and inlined (with a size limit), since the API has no file upload.
 - **Static & offline-capable.** No backend, no build server, no telemetry. It is
   an installable PWA whose shell is cached; only inference needs the network.
 - **Your token, your browser.** Bring your own free API token. It is stored in
@@ -37,22 +41,20 @@ can be attached directly and go to the vision-capable model rather than a tool.
 
 ## Tools
 
-| Tool                  | What it does                                                  |
-| --------------------- | ------------------------------------------------------------- |
-| **Summarize**         | Condense long documents, leaning on the 262k context window.  |
-| **Extract to JSON**   | Pull structured data from messy text into a shape you define. |
-| **Rewrite**           | Change tone and length while preserving meaning.              |
-| **Translate**         | Translate while keeping Markdown, code and links intact.      |
-| **Commit message**    | Turn a `git diff` into a Conventional Commit.                 |
-| **Explain code**      | Explain a snippet at the depth you need.                      |
-| **Classify & tag**    | Sort text into your own labels, as strict JSON.               |
-| **Describe an image** | Alt text, UI steps or a full description (vision input).      |
+The tool stack is grouped into five families. Each tool is one clear job: a short
+prompt, a handful of options, and a post-processor where the output is structured.
 
-Each tool is a small data definition: a short system prompt, a handful of
-options, and (where needed) a post-processor. The chat exposes the non-vision
-tools as callable functions **derived from those same definitions**, so adding a
-tool makes it available to the assistant automatically. No agentic loops beyond a
-bounded tool-use cycle.
+| Family      | Tools                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| **Write**   | Summarize · Rewrite · Translate · Proofread · Draft an email                                   |
+| **Code**    | Explain code · Commit message · Review a diff · Explain an error · Write tests · Build a regex |
+| **Data**    | Extract to JSON · Classify & tag · Write SQL                                                   |
+| **Analyze** | Action items                                                                                   |
+| **Vision**  | Describe an image                                                                              |
+
+Every non-vision tool is also exposed to the chat as a callable function,
+**derived from the same field definitions** — adding a tool makes it available to
+the assistant automatically. No agentic loops beyond a bounded tool-use cycle.
 
 ## Quick start
 

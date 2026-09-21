@@ -4,11 +4,12 @@
 	import Composer from '$lib/components/Composer.svelte';
 	import ToolTrace from '$lib/components/ToolTrace.svelte';
 	import { buildSystemPrompt, runAgent, type ModelCall, type ToolMode } from '$lib/chat/agent';
+	import { buildUserContent, MAX_FILES, readFile, type Attachment } from '$lib/chat/attachments';
 	import { conversations } from '$lib/chat/conversations.svelte';
 	import { CHAT_TOOL_MAP } from '$lib/chat/tools';
 	import { toView, type ToolTraceItem } from '$lib/chat/view';
 	import { chat as callModel, InferenceError } from '$lib/inference/client';
-	import type { ChatMessage as Message, ContentPart } from '$lib/inference/types';
+	import type { ChatMessage as Message } from '$lib/inference/types';
 	import { settings } from '$lib/settings.svelte';
 	import { messagesFor } from '$lib/tools/types';
 
@@ -21,6 +22,9 @@
 
 	let turn = $state<Turn | null>(null);
 	let error = $state('');
+	let attachments = $state<Attachment[]>([]);
+	let notice = $state('');
+	let dragging = $state(false);
 	let controller: AbortController | undefined;
 	let scroller: HTMLDivElement;
 
@@ -131,17 +135,44 @@
 		}
 	}
 
-	async function send(text: string, attached?: string) {
+	async function addFiles(files: File[]) {
+		notice = '';
+		const room = MAX_FILES - attachments.length;
+		if (room <= 0) {
+			notice = `Up to ${MAX_FILES} files per message.`;
+			return;
+		}
+		const accepted: Attachment[] = [];
+		const rejected: string[] = [];
+		for (const file of files.slice(0, room)) {
+			const result = await readFile(file);
+			if ('attachment' in result) accepted.push(result.attachment);
+			else rejected.push(result.error);
+		}
+		if (files.length > room) rejected.push(`only the first ${room} files were added`);
+		if (accepted.length) attachments = [...attachments, ...accepted];
+		notice = rejected.join(' · ');
+	}
+
+	function removeAttachment(id: string) {
+		attachments = attachments.filter((attachment) => attachment.id !== id);
+	}
+
+	async function send(text: string, files: Attachment[] = []) {
 		if (busy) return;
 		error = '';
+		if (!text.trim() && files.length === 0) return;
 		const conversation = conversations.active ?? conversations.create();
 
-		const parts: ContentPart[] = [{ type: 'text', text }];
-		if (attached) parts.push({ type: 'image_url', image_url: { url: attached } });
-		const userMessage: Message = { role: 'user', content: parts };
+		const userMessage: Message = {
+			role: 'user',
+			content: buildUserContent(text, files)
+		};
 
 		// Show the user's message immediately, before any request is made.
 		conversations.appendMessage(conversation.id, userMessage);
+		attachments = [];
+		notice = '';
 		const history = conversations.active?.messages ?? [userMessage];
 		await run(conversation.id, history);
 	}
@@ -156,9 +187,54 @@
 	function stop() {
 		controller?.abort();
 	}
+
+	// Drag-and-drop over the whole chat area (depth-counted so child elements
+	// do not flicker the overlay).
+	let dragDepth = 0;
+	function onDragEnter(event: DragEvent) {
+		if (!event.dataTransfer?.types.includes('Files')) return;
+		event.preventDefault();
+		dragDepth += 1;
+		dragging = true;
+	}
+	function onDragOver(event: DragEvent) {
+		if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
+	}
+	function onDragLeave() {
+		dragDepth = Math.max(0, dragDepth - 1);
+		if (dragDepth === 0) dragging = false;
+	}
+	function onDrop(event: DragEvent) {
+		event.preventDefault();
+		dragDepth = 0;
+		dragging = false;
+		const files = [...(event.dataTransfer?.files ?? [])];
+		if (files.length) addFiles(files);
+	}
 </script>
 
-<div class="flex h-full flex-col">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+	class="relative flex h-full flex-col"
+	ondragenter={onDragEnter}
+	ondragover={onDragOver}
+	ondragleave={onDragLeave}
+	ondrop={onDrop}
+>
+	{#if dragging}
+		<div
+			class="pointer-events-none absolute inset-0 z-30 grid place-items-center bg-ink-950/70 backdrop-blur-sm"
+		>
+			<div
+				class="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-accent px-10 py-8 text-center"
+			>
+				<span class="text-3xl" aria-hidden="true">📎</span>
+				<p class="text-sm font-medium text-slate-100">Drop files to attach</p>
+				<p class="text-xs text-slate-400">Images are sent to the model; text files are read in.</p>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Conversation header -->
 	<div class="flex items-center gap-3 border-b border-ink-700 px-4 py-2.5">
 		<h1 class="truncate text-sm font-medium text-slate-300">
@@ -237,9 +313,21 @@
 
 	<div class="border-t border-ink-700 bg-ink-950/80 px-4 py-3 backdrop-blur">
 		<div class="mx-auto max-w-3xl">
-			<Composer onSend={send} onStop={stop} {busy} disabled={!settings.hasToken} />
+			<Composer
+				onSend={send}
+				onStop={stop}
+				{busy}
+				disabled={!settings.hasToken}
+				{attachments}
+				onAddFiles={addFiles}
+				onRemoveAttachment={removeAttachment}
+			/>
+			{#if notice}
+				<p class="mt-2 text-center text-[11px] text-amber-300">{notice}</p>
+			{/if}
 			<p class="mt-2 text-center text-[11px] text-slate-600">
-				The assistant can use this site’s tools. Output can be wrong — verify important details.
+				Attach images or text files · the assistant can use this site’s tools · output can be wrong
+				— verify important details.
 			</p>
 		</div>
 	</div>
