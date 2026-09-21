@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
 	import { conversations } from '$lib/chat/conversations.svelte';
@@ -7,6 +8,8 @@
 
 	let { onNavigate }: { onNavigate?: () => void } = $props();
 
+	const chatHref = `${base}/`;
+
 	const links = [
 		{ href: `${base}/tools`, label: 'Tools', icon: '🧰' },
 		{ href: `${base}/settings`, label: 'Settings', icon: '⚙️' },
@@ -14,15 +17,22 @@
 	];
 
 	const isActive = (href: string) => page.url.pathname.startsWith(href);
+	const onChatPage = () => page.url.pathname === chatHref;
 
-	function newChat() {
-		conversations.create();
+	/** Selecting or creating a conversation must also show the chat. */
+	async function goToChat() {
 		onNavigate?.();
+		if (!onChatPage()) await goto(chatHref);
 	}
 
-	function open(id: string) {
+	async function newChat() {
+		conversations.create();
+		await goToChat();
+	}
+
+	async function open(id: string) {
 		conversations.select(id);
-		onNavigate?.();
+		await goToChat();
 	}
 </script>
 
